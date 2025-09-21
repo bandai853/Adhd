@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Distraction Journal — ADHD-friendly, Cloud Optional</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<style>
+  /* ===== Light/Dark theme ===== */
+  :root{
+    --bg:#f8fafc; --panel:#ffffff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
+    --accent:#2563eb; --accent2:#22c55e; --accent3:#f59e0b; --accent4:#a855f7; --accent5:#ef4444;
+    --zoneA:#eff6ff; --zoneB:#ecfeff; --zoneC:#fff7ed; --zoneD:#f0fdf4; --zoneE:#fef2f2;
+    --kbd-bg:#f1f5f9; --kbd-border:#d0d7e2;
+  }
+  body[data-theme="dark"]{
+    --bg:#0f1115; --panel:#151923; --muted:#9aa3b2; --text:#e6e9ef; --line:#232833;
+    --accent:#7aa2f7; --accent2:#7bd88f; --accent3:#f8c77e; --accent4:#c099ff; --accent5:#f7768e;
+    --zoneA:#111827; --zoneB:#0a1820; --zoneC:#1b1720; --zoneD:#0f1a14; --zoneE:#1c0f12;
+    --kbd-bg:#0c1118; --kbd-border:#273041;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,"Apple Color Emoji","Segoe UI Emoji";line-height:1.45}
+  header{position:sticky;top:0;background:linear-gradient(180deg,var(--panel),rgba(255,255,255,.85));backdrop-filter:saturate(1.1) blur(8px);padding:10px 16px;border-bottom:1px solid var(--line);z-index:10}
+  h1{margin:0;font-size:18px;display:flex;gap:8px;align-items:center}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .grid{display:grid;gap:12px}
+  @media(min-width:900px){.grid{grid-template-columns:1.2fr .8fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .right{margin-left:auto}
+  .kbd{font-family:ui-monospace,Menlo,Consolas,monospace;background:var(--kbd-bg);border:1px solid var(--kbd-border);border-bottom-width:3px;border-radius:6px;padding:2px 6px}
+
+  /* Zones */
+  .zone{border-radius:12px;padding:10px;border:1px dashed var(--line)}
+  .zone.a{background:var(--zoneA)}
+  .zone.b{background:var(--zoneB)}
+  .zone.c{background:var(--zoneC)}
+  .zone.d{background:var(--zoneD)}
+  .zone.e{background:var(--zoneE)}
+  .tag{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:6px 10px;font-weight:600}
+  .tag.blue{background:var(--zoneA);color:var(--accent)}
+  .tag.teal{background:var(--zoneB);color:var(--accent2)}
+  .tag.amber{background:var(--zoneC);color:var(--accent3)}
+  .tag.green{background:var(--zoneD);color:var(--accent2)}
+  .tag.rose{background:var(--zoneE);color:var(--accent5)}
+
+  /* Buttons */
+  .btn{background:linear-gradient(180deg,#fff,var(--kbd-bg));border:1px solid var(--line);border-radius:12px;padding:10px 14px;color:var(--text);cursor:pointer;transition:transform .04s ease}
+  .btn:hover{filter:brightness(0.98)}
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:linear-gradient(180deg,var(--accent),#1e40af);border-color:transparent;color:#fff;font-weight:700}
+  .btn.ghost{background:transparent;border:1px dashed var(--line)}
+  .btn.small{padding:6px 8px;font-size:12px;border-radius:9px}
+  .btn.danger{color:var(--accent5)}
+  .switch{display:inline-flex;align-items:center;gap:6px}
+
+  /* Inputs */
+  label{display:block;font-size:12px;color:var(--muted);margin:6px 0 4px}
+  input,select,textarea{width:100%;background:#fbfdff;border:1px solid var(--line);color:var(--text);padding:10px;border-radius:12px}
+  body[data-theme="dark"] input,body[data-theme="dark"] select,body[data-theme="dark"] textarea{background:#0d1016}
+  textarea{min-height:64px;resize:vertical;line-height:1.5;font-size:15px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+  /* Chips */
+  .chip{display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:11px 13px;cursor:pointer;user-select:none;border:1px solid var(--line);min-height:44px}
+  .chip:hover{filter:brightness(0.98)}
+  .chip[disabled]{opacity:.6;pointer-events:none}
+  .chip[data-active="1"]{outline:2px solid var(--accent)}
+  .dot{width:10px;height:10px;border-radius:999px;border:1px solid var(--line)}
+  .idx{background:var(--kbd-bg);border:1px solid var(--kbd-border);border-radius:5px;padding:0 5px;font:700 10px ui-monospace,monospace}
+
+  /* List */
+  .list{display:flex;flex-direction:column;gap:8px;max-height:420px;overflow:auto;padding-right:4px}
+  .item{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);margin-right:6px}
+  .bar{height:8px;background:#eef2f7;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  body[data-theme="dark"] .bar{background:#0c1118}
+  .bar > i{display:block;height:100%;background:var(--accent);width:0%}
+
+  /* Dialog */
+  dialog{border:1px solid var(--line);border-radius:12px;padding:0;max-width:520px}
+  dialog::backdrop{background:rgba(3,7,18,.25)}
+  .dlgHead{padding:12px 14px;border-bottom:1px solid var(--line)}
+  .dlgBody{padding:12px 14px}
+
+  /* Accessibility */
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+  <header>
+    <h1>🧭 Distraction Journal <span class="muted small">— ADHD-friendly, cloud‑optional</span>
+      <span class="right row">
+        <span id="authInfo" class="small muted">Local mode</span>
+        <button id="authBtn" class="btn small">🔐 Sign in</button>
+        <button id="themeBtn" class="btn small">🌙 Dark</button>
+      </span>
+    </h1>
+    <div class="row" style="margin-top:6px">
+      <span class="tag blue">🔖 Labels</span>
+      <span class="tag teal">🧠 Context</span>
+      <span class="tag amber">😊 Emotion</span>
+      <span class="tag green">⏱ Duration</span>
+      <span class="tag rose">🗒 Note</span>
+      <div class="muted small right">Tip: <span class="kbd">Space</span> to save · <span class="kbd">1–9</span> pick top labels</div>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <!-- LEFT: Quick Log -->
+    <section class="card zone a">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h2 style="margin:0">Quick Log</h2>
+        <div class="row small muted">
+          <label class="switch"><input type="checkbox" id="instantToggle"> ⚡ Instant log</label>
+          <span class="muted">· Labels sort by 30‑day frequency</span>
+        </div>
+      </div>
+
+      <label>What pulled you off track? (pick one)</label>
+      <div id="typesTop" class="row" style="margin-bottom:6px"></div>
+      <details>
+        <summary class="small muted" style="cursor:pointer">Show all labels</summary>
+        <div id="typesAll" class="row" style="margin-top:8px"></div>
+      </details>
+      <div class="row" style="margin-top:8px">
+        <input id="newType" placeholder="➕ Add a new label (e.g., Reddit, chores, shopping)" />
+        <button id="addTypeBtn" class="btn">➕ Add label</button>
+        <button id="manageLabels" class="btn ghost">⚙️ Manage</button>
+      </div>
+
+      <div class="two" style="margin-top:8px">
+        <div class="zone b">
+          <label>Current activity</label>
+          <div class="row" id="activityChips"></div>
+          <input id="activity" list="activityPresets" placeholder="e.g., writing report" />
+          <datalist id="activityPresets"></datalist>
+        </div>
+        <div class="zone b">
+          <label>Context/trigger</label>
+          <div class="row" id="contextChips"></div>
+          <input id="context" list="contextPresets" placeholder="e.g., notification, boredom, noise" />
+          <datalist id="contextPresets"></datalist>
+        </div>
+      </div>
+
+      <div class="two">
+        <div class="zone c">
+          <label>Emotion</label>
+          <select id="emotion"></select>
+        </div>
+        <div class="zone d">
+          <label>Duration (mins)</label>
+          <div class="row">
+            <input id="duration" type="number" inputmode="numeric" min="0" placeholder="0" style="max-width:110px" />
+            <button class="btn" data-plus="2">+2</button>
+            <button class="btn" data-plus="5">+5</button>
+            <button class="btn" id="timerBtn">⏱ Start timer</button>
+          </div>
+          <div id="timerHint" class="small muted"></div>
+        </div>
+      </div>
+
+      <div class="zone e">
+        <label>Note</label>
+        <textarea id="note" placeholder="Just a few words…"></textarea>
+      </div>
+
+      <div class="row" style="margin-top:8px; align-items:center">
+        <button class="btn primary" id="saveBtn">💾 Save (Space)</button>
+        <button class="btn ghost" id="clearBtn" title="Reset fields">♻️ Reset</button>
+        <span class="muted small" id="saveStatus"></span>
+      </div>
+      <div class="row small" id="focusStrip" style="display:none">
+        <button id="focus5" class="btn">▶️ 5‑min focus</button>
+        <span id="focusCountdown" class="muted"></span>
+      </div>
+    </section>
+
+    <!-- RIGHT: Insights -->
+    <aside class="card zone d">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h2 style="margin:0">Patterns</h2>
+        <div class="small muted">
+          <label class="switch"><input type="checkbox" id="cvdToggle"> CVD‑safe colors</label>
+        </div>
+      </div>
+      <div id="streakCard" class="card" style="margin:8px 0 12px"></div>
+      <div id="stats"></div>
+      <div style="height:6px"></div>
+      <div class="row">
+        <button class="btn" id="exportCsv">📤 Export CSV</button>
+        <button class="btn" id="exportJson">📤 Export JSON</button>
+        <label class="btn" for="importFile">📥 Import</label>
+        <input id="importFile" type="file" accept=".json" style="display:none" />
+        <button class="btn right" id="weeklyBtn">🧾 Weekly summary</button>
+        <button class="btn danger right" id="wipe">🗑 Wipe data</button>
+      </div>
+      <div class="muted small" style="margin-top:6px">Local‑first. Sign in to sync across devices.</div>
+    </aside>
+
+    <!-- BOTTOM: Recent -->
+    <section class="card zone b" style="grid-column:1/-1">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h2 style="margin:0">Recent entries</h2>
+        <div class="tag green">🧹 Filter</div>
+      </div>
+      <div class="row">
+        <select id="filterRange">
+          <option value="3">Last 3 days</option>
+          <option value="7" selected>Last 7 days</option>
+          <option value="30">Last 30 days</option>
+          <option value="all">All time</option>
+        </select>
+        <input id="search" placeholder="Search notes/context/activity… (press /)" />
+        <button class="btn" id="copyToday">📝 Copy today’s summary</button>
+      </div>
+      <div id="list" class="list"></div>
+    </section>
+  </div>
+
+  <!-- Manage labels dialog -->
+  <dialog id="labelsDlg">
+    <div class="dlgHead"><b>Manage labels</b></div>
+    <div class="dlgBody">
+      <div id="labelsAdmin" class="list"></div>
+      <div class="row" style="margin-top:10px">
+        <button class="btn right" id="closeDlg">Close</button>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="testBanner" class="small muted" style="position:fixed;bottom:8px;right:8px;opacity:.6"></div>
+
+<script type="module">
+/* ========= Constants ========= */
+const EMOTIONS = [
+  {k:"anxious",   tag:"😬", c:"#fde68a"},
+  {k:"frustrated",tag:"😤", c:"#fecaca"},
+  {k:"overwhelmed",tag:"😵", c:"#e9d5ff"},
+  {k:"restless",  tag:"🌀", c:"#bae6fd"},
+  {k:"curious",   tag:"🧐", c:"#bbf7d0"},
+  {k:"tired",     tag:"😴", c:"#e5e7eb"}
+];
+
+const LS = {
+  entriesKey:"distraction_journal_v2_entries",
+  typesKey:"distraction_journal_v2_types",
+  themeKey:"distraction_journal_v2_theme",
+  instant:"dj_instant",
+  cvd:"dj_cvd",
+  dailyBudget:"dj_daily_budget",
+  migrated:"dj_migrated"
+};
+const el = id => document.getElementById(id);
+
+/* ========= Emoji/Color for labels ========= */
+const emojiMap = { phone:"📱", social:"📣", web:"🌐", video:"📺", chat:"💬", email:"✉️", people:"👥", noise:"🔊", "mind-wander":"💭", food:"🍔", errand:"🧾", gaming:"🎮", other:"❓" };
+const colorMap = { phone:"210 94% 62%", social:"295 72% 57%", web:"199 89% 48%", video:"12 93% 62%", chat:"160 84% 40%", email:"41 90% 56%", people:"262 83% 64%", noise:"350 84% 60%", "mind-wander":"186 72% 55%", food:"24 95% 58%", errand:"120 62% 45%", gaming:"280 64% 55%", other:"220 9% 46%" };
+const DEFAULT_TYPES = ["phone","social","web","video","chat","email","people","noise","mind-wander","food","errand","gaming","other"];
+function hashColor(name){ let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0; const hue=h%360, sat=55+(h%20), lit=55; return `${hue} ${sat}% ${lit}%`; }
+function typeColor(t){ return (colorMap[t]||hashColor(t)); }
+function typeEmoji(t){ if(emojiMap[t]) return emojiMap[t]; const s=t.toLowerCase(); if(/mail|inbox|gmail/.test(s)) return "✉️"; if(/call|phone|whats|wechat|line|signal/.test(s)) return "📱"; if(/reddit|social|ig|insta|fb|facebook|tiktok|\bx\b|twitter/.test(s)) return "📣"; if(/video|yt|youtube|netflix|prime|bili/.test(s)) return "📺"; if(/game/.test(s)) return "🎮"; if(/food|snack|eat|lunch|coffee|tea/.test(s)) return "🍔"; if(/noise|sound/.test(s)) return "🔊"; if(/people|chat|msg|message|im/.test(s)) return "💬"; if(/shop|errand|grocer|post/.test(s)) return "🧾"; if(/web|browse|news|wiki|search/.test(s)) return "🌐"; if(/think|mind|ruminat|daydream|wander/.test(s)) return "💭"; return "🏷️"; }
+
+/* ========= Local helpers ========= */
+function escapeHtml(s){ return (s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[m])); }
+function toCSV(rows){ const header=["time","type","activity","context","emotion","duration","note"]; const esc=v=>`"${String(v??"").replace(/"/g,'""')}"`; return [header.join(","), ...rows.map(r=>header.map(k=>esc(r[k])).join(","))].join("\n"); }
+
+/* ========= Data layer ========= */
+let useCloud = false; let currentUser = null; let entriesCache = []; let typesCustom = []; let unsubscribeEntries=null, unsubscribeTypes=null;
+
+function lsLoad(key, fallback){ try{ return JSON.parse(localStorage.getItem(key)||JSON.stringify(fallback)); }catch{return fallback;} }
+function lsSave(key, val){ localStorage.setItem(key, JSON.stringify(val)); }
+
+// Local
+function local_loadAll(){ entriesCache = lsLoad(LS.entriesKey, []); typesCustom = lsLoad(LS.typesKey, []); renderAll(); }
+function local_addEntry(e){ entriesCache.unshift(e); lsSave(LS.entriesKey, entriesCache); }
+function local_saveTypes(arr){ typesCustom = arr; lsSave(LS.typesKey, arr); }
+function local_deleteIndex(idx){ entriesCache.splice(idx,1); lsSave(LS.entriesKey, entriesCache); }
+
+// Firebase (optional)
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection, addDoc, query, orderBy, serverTimestamp, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = { // <-- fill to enable cloud
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.appspot.com",
+  messagingSenderId: "XXXX",
+  appId: "YOUR_APP_ID"
+};
+let app, auth, db;
+try{ app=initializeApp(firebaseConfig); auth=getAuth(app); db=getFirestore(app); }catch(e){ console.warn("Firebase not configured; local mode only"); }
+
+async function cloud_bootListeners(){
+  if(!db||!currentUser) return;
+  if(unsubscribeEntries) unsubscribeEntries(); if(unsubscribeTypes) unsubscribeTypes();
+  const userDoc = doc(db, "users", currentUser.uid);
+  const entriesCol = collection(userDoc, "entries");
+  unsubscribeTypes = onSnapshot(userDoc,(d)=>{ typesCustom = d.exists() && Array.isArray(d.data().types)? d.data().types : []; renderAll(); });
+  let firstSnap=true;
+  unsubscribeEntries = onSnapshot(query(entriesCol, orderBy("time","desc")), async (snap)=>{
+    const cloudEntries = snap.docs.map(d=>({id:d.id, ...d.data()}));
+    entriesCache = cloudEntries;
+    renderAll();
+    // First-time migration: if cloud empty and local has data
+    if(firstSnap){ firstSnap=false; const migrated=lsLoad(LS.migrated,false); if(cloudEntries.length===0){ const localEntries=lsLoad(LS.entriesKey,[]); if(localEntries.length>0 && !migrated){ if(confirm(`Upload ${localEntries.length} local entries to cloud?`)){ for(const e of localEntries){ try{ await addDoc(entriesCol, {...e, time: e.time && !e.time.toDate ? new Date(e.time) : serverTimestamp()}); }catch{} } lsSave(LS.migrated,true); alert("Uploaded local entries."); }
+      }
+    }
+  });
+}
+async function cloud_addEntry(e){ if(!db||!currentUser) return local_addEntry(e); const entriesCol = collection(doc(db,"users",currentUser.uid),"entries"); await addDoc(entriesCol, {...e, time: serverTimestamp()}); }
+async function cloud_deleteByIndex(idx){ const e=entriesCache[idx]; if(!e||!e.id||!db||!currentUser) return; await deleteDoc(doc(db,"users",currentUser.uid,"entries",e.id)); }
+async function cloud_saveTypes(arr){ if(!db||!currentUser) return local_saveTypes(arr); await setDoc(doc(db,"users",currentUser.uid), {types:arr},{merge:true}); typesCustom=arr; renderAll(); }
+
+/* ========= Theme & toggles ========= */
+(function theme(){ const pref=localStorage.getItem(LS.themeKey)||"light"; if(pref==="dark") document.body.dataset.theme="dark"; const btn=el("themeBtn"); const sync=()=>{ btn.textContent=document.body.dataset.theme==="dark"?"☀️ Light":"🌙 Dark"; }; sync(); btn.onclick=()=>{ const dark=document.body.dataset.theme==="dark"; document.body.dataset.theme=dark?"light":"dark"; localStorage.setItem(LS.themeKey,document.body.dataset.theme); sync(); }; })();
+
+const authInfo=el("authInfo"), authBtn=el("authBtn");
+function setAuthUI(){ if(useCloud&&currentUser){ authInfo.textContent=`Synced: ${currentUser.email||"user"}`; authBtn.textContent="🚪 Sign out"; } else { authInfo.textContent="Local mode"; authBtn.textContent="🔐 Sign in"; } }
+if(auth){ onAuthStateChanged(auth,u=>{ currentUser=u; useCloud=!!u; setAuthUI(); if(u) cloud_bootListeners(); else { if(unsubscribeEntries) unsubscribeEntries(); if(unsubscribeTypes) unsubscribeTypes(); local_loadAll(); } }); authBtn.onclick=async()=>{ if(currentUser){ await signOut(auth);} else { try{ await signInWithPopup(auth,new GoogleAuthProvider()); }catch(e){ alert("Sign-in failed: "+e.message); } } }; } else { authBtn.onclick=()=>alert("Add your Firebase config to enable sync."); }
+
+// Instant log & CVD toggle
+let instantLog = JSON.parse(localStorage.getItem(LS.instant)||'false'); const instantToggle=el('instantToggle'); instantToggle.checked=instantLog; instantToggle.onchange=()=>{ instantLog=instantToggle.checked; localStorage.setItem(LS.instant,JSON.stringify(instantLog)); };
+let cvdSafe = JSON.parse(localStorage.getItem(LS.cvd)||'false'); const cvdToggle=el('cvdToggle'); cvdToggle.checked=cvdSafe; cvdToggle.onchange=()=>{ cvdSafe=cvdToggle.checked; localStorage.setItem(LS.cvd,JSON.stringify(cvdSafe)); renderAll(); };
+
+/* ========= Rendering ========= */
+const typesTop=el("typesTop"), typesAll=el("typesAll"), activityChips=el('activityChips'), contextChips=el('contextChips');
+let selectedType=null; let chipOrder=[]; let focusCountdown=null;
+
+function getAllTypes(){ return Array.from(new Set([...DEFAULT_TYPES, ...(typesCustom||[])])); }
+function summarizeTypes(days=30){ const counts={}; const now=Date.now(); const since=days? now-days*86400000 : 0; entriesCache.forEach(x=>{ const t=(x.type||"").trim(); const ts=(x.time && x.time.toDate)? x.time.toDate().getTime() : new Date(x.time||Date.now()).getTime(); if(!t || (days && ts<since)) return; counts[t]=(counts[t]||0)+1; }); return counts; }
+function sortedTypes(){ const types=getAllTypes(); const counts=summarizeTypes(30); return types.sort((a,b)=>(counts[b]||0)-(counts[a]||0)||a.localeCompare(b)); }
+
+function chipDisabled(v){ [...typesTop.children, ...typesAll.children].forEach(c=> c.toggleAttribute('disabled', v)); }
+
+function makeChip(name, idxNum){ const b=document.createElement("button"); b.className="chip"; b.setAttribute("data-type", name); const hue=typeColor(name); const bg=`hsla(${hue} / .18)`; const line=`hsl(${hue})`; b.style.background=bg; b.style.borderColor=line; b.title = idxNum? `Press ${idxNum}`: name;
+  const dot=document.createElement("span"); dot.className="dot"; dot.style.backgroundColor=line;
+  const em=document.createElement("span"); em.textContent=typeEmoji(name);
+  const txt=document.createElement("span"); txt.textContent=name;
+  b.append(dot, em, txt);
+  if(idxNum){ const idx=document.createElement("span"); idx.className="idx"; idx.textContent=idxNum; b.append(idx); }
+  b.onclick=()=>{
+    if(!instantLog){ selectedType=name; updateTypeChips(); return; }
+    // Instant save
+    const e={ type:name, activity:"", context:"", emotion:"", duration:0, note:"", time:new Date().toISOString() };
+    if(useCloud) cloud_addEntry(e); else local_addEntry(e);
+    el("saveStatus").innerHTML = `Logged ${typeEmoji(name)} <b>${escapeHtml(name)}</b> ✅ <button class="btn small" id="undoBtn">Undo</button>`;
+    setupUndo();
+    renderAll();
+    showFocusStrip();
+  };
+  return b; }
+function renderTypeChips(){ typesTop.innerHTML=""; typesAll.innerHTML=""; chipOrder=[]; const all=sortedTypes(); const top=all.slice(0,9); top.forEach((t,i)=>{ const c=makeChip(t,i+1); chipOrder.push(c); typesTop.appendChild(c); }); all.slice(9).forEach(t=> typesAll.appendChild(makeChip(t))); updateTypeChips(); }
+function updateTypeChips(){ const setActive=(wrap)=>{[...wrap.children].forEach(c=>{ c.dataset.active = (c.getAttribute("data-type")===selectedType)?"1":"0"; }); }; setActive(typesTop); setActive(typesAll); }
+
+function pillForType(t){ const pill=document.createElement('span'); pill.className='pill'; const hue=typeColor(t); pill.style.borderColor=`hsla(${hue} / 0.4)`; pill.style.background=`hsla(${hue} / .18)`; const emo=document.createElement('span'); emo.textContent=typeEmoji(t)+" "; const b=document.createElement('b'); b.textContent=t; pill.append(emo,b); return pill; }
+
+function renderList(){ const list=el("list"); list.innerHTML=""; const q=el("search").value.trim().toLowerCase(); const range=el("filterRange").value; const now=Date.now(); const since = range==="all" ? 0 : now - Number(range)*86400000; entriesCache.filter(x=>{ const ts=(x.time && x.time.toDate)? x.time.toDate().getTime() : new Date(x.time||Date.now()).getTime(); return ts>=since && (!q || JSON.stringify(x).toLowerCase().includes(q)); }).slice(0,400).forEach((x,idx)=>{ const row=document.createElement("div"); row.className="item"; const left=document.createElement("div"); left.append(pillForType(x.type), makeSmallMuted(fmtTime(x.time))); const mid=document.createElement("div"); const emo = x.emotion ? EMOTIONS.find(e=>e.k===x.emotion) : null; const ctx=[x.activity,x.context,x.emotion? `${emo?.tag||""} ${x.emotion}`:null].filter(Boolean).join(" · "); const note = x.note? ` — ${x.note}` : ""; mid.innerHTML = `<div>${ctx? `<span class="small">${escapeHtml(ctx)}</span>`:""}${escapeHtml(note)}</div>` + `<div class="small muted">${x.duration? `${x.duration} min`:""}</div>`; const right=document.createElement("div"); const del=document.createElement("button"); del.className="btn small danger"; del.textContent="Delete"; del.onclick=async()=>{ if(useCloud) await cloud_deleteByIndex(idx); else local_deleteIndex(idx); renderAll(); }; right.appendChild(del); row.append(left, mid, right); list.appendChild(row); }); }
+function fmtTime(t){ if(t && t.toDate) return t.toDate().toLocaleString(); return new Date(t||Date.now()).toLocaleString(); }
+function makeSmallMuted(t){ const s=document.createElement("span"); s.className="small muted"; s.style.marginLeft="6px"; s.textContent=t; return s; }
+
+function summarize(days=7){ const now=Date.now(); const since=now-days*86400000; const all=entriesCache.filter(x=>{ const ts=(x.time && x.time.toDate)? x.time.toDate().getTime() : new Date(x.time||Date.now()).getTime(); return ts>=since; }); const byType={}, byHour=Array(24).fill(0), byContext={}; const totals={count:all.length, mins:0}; const daysSet=new Set(); all.forEach(x=>{ byType[x.type]=(byType[x.type]||0)+1; const d=(x.time && x.time.toDate)? x.time.toDate() : new Date(x.time||Date.now()); daysSet.add(d.toDateString()); byHour[d.getHours()]++; if(x.context) byContext[x.context]=(byContext[x.context]||0)+1; totals.mins+=Number(x.duration||0); }); const hotHour=byHour.reduce((m,v,i)=> v>m.v?{i,v}:{...m},{i:0,v:-1}); return {totals, byType, byHour, byContext, hotHour, daysSet}; }
+
+function summarizeEmoByType(days=14){ const since=Date.now()-days*86400000; const table={}; entriesCache.forEach(x=>{ const t=(x.type||"").trim(); if(!t) return; const ts=(x.time && x.time.toDate)? x.time.toDate().getTime() : new Date(x.time||Date.now()).getTime(); if(ts < since) return; const band = /anxious|frustrated|overwhelmed|tired/.test(x.emotion||"")?"neg":(x.emotion?"pos":"neu"); (table[t]||(table[t]={neg:0,neu:0,pos:0}))[band]++; }); return table; }
+
+function renderBar(percent,colorVar){ const wrap=document.createElement("div"); wrap.className="bar"; const i=document.createElement("i"); i.style.width=Math.max(2,percent)+"%"; if(colorVar) i.style.background=colorVar; wrap.appendChild(i); return wrap; }
+
+function renderStreaks(){ const card=el('streakCard'); const byDay=new Map(); entriesCache.forEach(x=>{ const d=(x.time && x.time.toDate)? x.time.toDate() : new Date(x.time||Date.now()); const key=d.toDateString(); const dur=Number(x.duration||0); byDay.set(key,(byDay.get(key)||0)+dur); }); const days=[...byDay.keys()].map(k=>new Date(k)).sort((a,b)=>a-b); let streak=0, best=0; let prev=null; days.forEach(d=>{ if(!prev){ streak=1; } else { const diff=(d - prev)/(86400000); streak = diff===1? streak+1 : 1; } best=Math.max(best,streak); prev=d; }); const today=new Date(); today.setHours(0,0,0,0); const minsToday=byDay.get(today.toDateString())||0; const budget=Number(localStorage.getItem(LS.dailyBudget)||60);
+  const wrap=document.createElement('div'); wrap.className='zone b';
+  const top=document.createElement('div'); top.className='row'; top.innerHTML=`<b>🟢 Streak:</b> ${streak} day(s) &nbsp;·&nbsp; <b>🏆 Best:</b> ${best} &nbsp;·&nbsp; <b>🎯 Daily budget:</b> <input id="budget" type="number" min="0" style="width:80px"> min`;
+  const bar=renderBar(Math.min(100,(minsToday/budget)*100), 'linear-gradient(90deg,var(--accent5),var(--accent3))');
+  const hint=document.createElement('div'); hint.className='small muted'; hint.textContent = `Today logged: ${minsToday} min (budget ${budget})`;
+  wrap.append(top, bar, hint);
+  card.innerHTML=''; card.appendChild(wrap);
+  const budgetInput=el('budget'); budgetInput.value=budget; budgetInput.onchange=()=>{ localStorage.setItem(LS.dailyBudget, budgetInput.value||60); renderStreaks(); };
+}
+
+function renderMatrix(){ const s=el('stats'); const table=summarizeEmoByType(14); const entries=Object.entries(table); if(entries.length===0) return; const top=entries.sort((a,b)=> (b[1].neg+b[1].neu+b[1].pos) - (a[1].neg+a[1].neu+a[1].pos)).slice(0,4);
+  const block=document.createElement('div'); block.className='card'; const title=document.createElement('div'); title.innerHTML='<span class="tag amber">🧭 Triggers × Emotion (14d)</span>'; title.style.marginBottom='6px'; block.appendChild(title);
+  top.forEach(([k,v])=>{ const row=document.createElement('div'); row.style.display='grid'; row.style.gridTemplateColumns='120px 1fr 1fr 1fr'; row.style.gap='8px'; row.style.alignItems='center'; const label=document.createElement('div'); label.className='small'; label.textContent=`${typeEmoji(k)} ${k}`; row.appendChild(label);
+    const total=v.neg+v.neu+v.pos || 1; const neg=renderBar((v.neg/total)*100, 'crimson'); const neu=renderBar((v.neu/total)*100, 'gray'); const pos=renderBar((v.pos/total)*100, 'seagreen');
+    row.append(neg,neu,pos); block.appendChild(row); });
+  s.appendChild(block);
+}
+
+function renderStats(){ const s=el("stats"); s.innerHTML=""; renderStreaks(); const last7=summarize(7); const last30=summarize(30);
+  const makeBlock=(title,tagColor,contentEl)=>{ const card=document.createElement("div"); card.style.border="1px solid var(--line)"; card.style.borderRadius="12px"; card.style.padding="10px"; card.style.background="var(--panel)"; const h=document.createElement("div"); h.innerHTML=`<span class="tag ${tagColor}">${title}</span>`; h.style.marginBottom="6px"; card.append(h,contentEl); return card; };
+  const totals=document.createElement("div"); totals.innerHTML=`<div><b>${last7.totals.count}</b> distractions in 7 days · <b>${last7.totals.mins}</b> mins logged</div>`; s.appendChild(makeBlock("📊 Last 7 days","blue", totals));
+  const typeWrap=document.createElement("div"); const typeArr=Object.entries(last7.byType).sort((a,b)=>b[1]-a[1]).slice(0,5); const maxType=Math.max(1,...typeArr.map(x=>x[1])); typeArr.forEach(([k,v])=>{ const row=document.createElement("div"); row.style.display="grid"; row.style.gridTemplateColumns="130px 1fr 40px"; row.style.alignItems="center"; row.style.gap="8px"; const nameSpan=document.createElement('span'); nameSpan.className='small'; nameSpan.textContent=`${typeEmoji(k)} ${k}`; row.appendChild(nameSpan); row.appendChild(renderBar((v/maxType)*100,"hsl("+typeColor(k)+")")); const n=document.createElement("div"); n.className="small muted"; n.textContent=v; row.appendChild(n); typeWrap.appendChild(row); }); s.appendChild(makeBlock("🔥 Top triggers (7d)","amber", typeWrap));
+  const hourWrap=document.createElement("div"); const maxHour=Math.max(1,...last30.byHour); [0,6,9,12,15,18,21].forEach(i=>{ const v=last30.byHour[i]; const row=document.createElement("div"); row.style.display="grid"; row.style.gridTemplateColumns="60px 1fr 30px"; row.style.gap="8px"; row.style.alignItems="center"; row.appendChild(Object.assign(document.createElement('span'),{className:'small',textContent:`${String(i).padStart(2,"0")}:00`})); row.appendChild(renderBar((v/maxHour)*100,"var(--accent2)")); const n=document.createElement("div"); n.className="small muted"; n.textContent=v; row.appendChild(n); hourWrap.appendChild(row); }); const hint=document.createElement("div"); hint.className="small muted"; hint.textContent=`Most frequent hour: ${String(last30.hotHour.i).padStart(2,"0")}:00`; hourWrap.appendChild(hint); s.appendChild(makeBlock("🕒 Time-of-day (30d)","green", hourWrap));
+  const ctxWrap=document.createElement("div"); const ctxArr=Object.entries(last7.byContext).sort((a,b)=>b[1]-a[1]).slice(0,5); const maxCtx=Math.max(1,...ctxArr.map(x=>x[1])); ctxArr.forEach(([k,v])=>{ const row=document.createElement("div"); row.style.display="grid"; row.style.gridTemplateColumns="1fr 1fr 40px"; row.style.alignItems="center"; row.style.gap="8px"; const kSpan=document.createElement('span'); kSpan.className='small'; kSpan.textContent=k; row.appendChild(kSpan); row.appendChild(renderBar((v/maxCtx)*100,"var(--accent4)")); const n=document.createElement("div"); n.className="small muted"; n.textContent=v; row.appendChild(n); ctxWrap.appendChild(row); }); s.appendChild(makeBlock("🧩 Common contexts (7d)","teal", ctxWrap));
+  renderMatrix();
+}
+
+function seedChipsFromPresets(){ const acts=new Map(), ctxs=new Map(); entriesCache.slice(0,400).forEach(x=>{ if(x.activity) acts.set(x.activity,(acts.get(x.activity)||0)+1); if(x.context) ctxs.set(x.context,(ctxs.get(x.context)||0)+1); }); const topActs=[...acts.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([v])=>v); const topCtx=[...ctxs.entries()].sort((a,b)=>b[1]-a[1]).slice(0,6).map(([v])=>v);
+  activityChips.innerHTML=''; topActs.forEach(v=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=v; b.onclick=()=>{ el('activity').value=v; }; activityChips.appendChild(b); });
+  contextChips.innerHTML=''; topCtx.forEach(v=>{ const b=document.createElement('button'); b.className='chip'; b.textContent=v; b.onclick=()=>{ el('context').value=v; }; contextChips.appendChild(b); });
+}
+
+function renderAll(){ renderTypeChips(); renderList(); renderStats(); seedPresets(); seedChipsFromPresets(); applyCvd(); }
+function clearFields(){ selectedType=null; updateTypeChips(); ["activity","context","emotion","duration","note"].forEach(id=>el(id).value=""); timerStart=null; el("timerBtn").textContent="⏱ Start timer"; updateTimerHint(); }
+let timerStart=null; function updateTimerHint(){ el("timerHint").textContent = timerStart? `Timer running… started ${new Date(timerStart).toLocaleTimeString()}` : ""; } function toggleTimer(){ if(!timerStart){ timerStart=Date.now(); el("timerBtn").textContent="⏱ Stop & fill"; } else { const mins=Math.max(1, Math.round((Date.now()-timerStart)/60000)); el("duration").value=mins; timerStart=null; el("timerBtn").textContent="⏱ Start timer"; } updateTimerHint(); }
+
+function emotionsInit(){ const sel=el("emotion"); sel.innerHTML = `<option value="">—</option>` + EMOTIONS.map(e=>`<option value="${e.k}">${e.tag} ${e.k}</option>`).join(""); }
+
+async function saveEntry(){ if(!selectedType){ el("saveStatus").textContent="Pick a label first."; return; } const e={ type:selectedType, activity:el("activity").value.trim(), context:el("context").value.trim(), emotion:el("emotion").value, duration:Number(el("duration").value||0), note:el("note").value.trim(), time:new Date().toISOString() }; if(useCloud) await cloud_addEntry(e); else local_addEntry(e); el("saveStatus").innerHTML = `Saved ✅ <button class=\"btn small\" id=\"undoBtn\">Undo</button>`; setupUndo(); clearFields(); renderAll(); showFocusStrip(); }
+function setupUndo(){ const btn=document.getElementById('undoBtn'); if(!btn) return; btn.onclick=async()=>{ if(useCloud) await cloud_deleteByIndex(0); else { entriesCache.shift(); lsSave(LS.entriesKey, entriesCache); } renderAll(); el("saveStatus").textContent="Undone"; setTimeout(()=>el("saveStatus").textContent="",800); } }
+
+function showFocusStrip(){ const strip=el('focusStrip'); strip.style.display='flex'; const cd=el('focusCountdown'); let secs=300; chipDisabled(true); cd.textContent=''; if(focusCountdown) clearInterval(focusCountdown); focusCountdown=setInterval(()=>{ secs--; const m=Math.floor(secs/60), s=String(secs%60).padStart(2,'0'); cd.textContent=`${m}:${s}`; if(secs<=0){ clearInterval(focusCountdown); cd.textContent='Nice!'; chipDisabled(false); setTimeout(()=>{ strip.style.display='none'; cd.textContent=''; },1200); } },1000); }
+
+function exportCSV(){ const csv=toCSV(entriesCache.map(e=>({...e, time: (e.time&&e.time.toDate)? e.time.toDate().toISOString():e.time}))); const blob=new Blob([csv],{type:"text/csv"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="distraction_journal.csv"; a.click(); }
+function exportJSON(){ const json=JSON.stringify(entriesCache.map(e=>({...e, time: (e.time&&e.time.toDate)? e.time.toDate().toISOString():e.time})),null,2); const blob=new Blob([json],{type:"application/json"}); const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="distraction_journal.json"; a.click(); }
+
+function copyToday(){ const today=new Date(); today.setHours(0,0,0,0); const items=entriesCache.filter(x=>{ const ts=(x.time && x.time.toDate)? x.time.toDate().getTime() : new Date(x.time||Date.now()).getTime(); return ts>=today.getTime(); }); const counts={}; let mins=0; items.forEach(x=>{ counts[x.type]=(counts[x.type]||0)+1; mins+=Number(x.duration||0); }); const top=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k}×${v}`).join(", ")||"—"; const txt=`Distractions today: ${items.length} (${top}). Minutes lost: ${mins}.`; navigator.clipboard.writeText(txt).then(()=>alert("Copied: "+txt)); }
+
+function addNewType(){ const raw=el("newType").value.trim(); if(!raw) return; const name=raw.toLowerCase(); const all=new Set(getAllTypes()); if(all.has(name)){ el("newType").value=""; selectedType=name; updateTypeChips(); return; } const custom=new Set(typesCustom||[]); custom.add(name); if(useCloud) cloud_saveTypes([...custom]); else local_saveTypes([...custom]); el("newType").value=""; selectedType=name; renderTypeChips(); }
+
+function openLabelsAdmin(){ const dlg=el("labelsDlg"); const box=el("labelsAdmin"); box.innerHTML=""; const all=getAllTypes(); const counts=summarizeTypes(0); all.forEach(t=>{ const row=document.createElement("div"); row.className="item"; row.style.gridTemplateColumns="1fr auto auto"; const left=document.createElement("div"); const pill=pillForType(t); const count=document.createElement('span'); count.className='small muted'; count.style.marginLeft='6px'; count.textContent=`count: ${counts[t]||0}`; left.append(pill, count); const rename=document.createElement("button"); rename.className="btn small"; rename.textContent="Rename"; rename.onclick=async()=>{ const to=prompt("Rename label", t); if(!to || to===t) return; if(!useCloud||!db||!currentUser){ entriesCache.forEach(e=>{ if(e.type===t) e.type=to.toLowerCase(); }); lsSave(LS.entriesKey, entriesCache); } else { const batch=writeBatch(db); entriesCache.forEach(e=>{ if(e.type===t && e.id){ batch.update(doc(db, "users", currentUser.uid, "entries", e.id), {type:to.toLowerCase()}); } }); await batch.commit(); } const custom=new Set(typesCustom||[]); if(custom.has(t)) { custom.delete(t); custom.add(to.toLowerCase()); } else { custom.add(to.toLowerCase()); } if(useCloud) cloud_saveTypes([...custom]); else local_saveTypes([...custom]); renderAll(); openLabelsAdmin(); };
+    const del=document.createElement("button"); del.className="btn small danger"; del.textContent="Delete"; del.onclick=()=>{ if(DEFAULT_TYPES.includes(t)) { alert("Default labels can’t be deleted."); return; } const custom=new Set(typesCustom||[]); custom.delete(t); if(useCloud) cloud_saveTypes([...custom]); else local_saveTypes([...custom]); renderAll(); openLabelsAdmin(); };
+    row.append(left, rename, del); box.appendChild(row); }); dlg.showModal(); }
+
+/* ========= Wire up ========= */
+el("saveBtn").onclick=saveEntry; el("clearBtn").onclick=clearFields; el("timerBtn").onclick=toggleTimer; document.querySelectorAll("[data-plus]").forEach(b=> b.onclick=()=>{ el("duration").value = Number(el("duration").value||0) + Number(b.dataset.plus); });
+
+// Shortcuts
+const searchEl=el('search'); document.addEventListener("keydown",(e)=>{ const tag=document.activeElement.tagName; const inField=["INPUT","TEXTAREA","SELECT"].includes(tag); if(document.querySelector('dialog[open]')) return; if(e.key===" " && !inField){ e.preventDefault(); saveEntry(); } if(e.key==='/'){ e.preventDefault(); searchEl.focus(); } if(e.key==='t' && !inField){ toggleTimer(); } if(e.key==='f' && !inField){ showFocusStrip(); } const n=parseInt(e.key,10); if(!inField && n>=1 && n<=9){ const chip=chipOrder[n-1]; if(chip){ chip.click(); } } });
+
+el("search").oninput=renderList; el("filterRange").onchange=renderList; el("exportCsv").onclick=exportCSV; el("exportJson").onclick=exportJSON; el("weeklyBtn").onclick=()=>{ const last7=summarize(7); const top=Object.entries(last7.byType).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([k,v])=>`${k}×${v}`).join(", ")||"—"; const ctxTop=Object.entries(last7.byContext).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([k])=>k).join(", ")||"—"; const txt=`Last 7d: ${last7.totals.count} distractions (${top}). Minutes lost: ${last7.totals.mins}. Hot hour: ${String(summarize(30).hotHour.i).padStart(2,'0')}:00. Common contexts: ${ctxTop}.`; navigator.clipboard.writeText(txt).then(()=>alert("Summary copied!")); };
+
+el("importFile").onchange=(e)=>{ const f=e.target.files[0]; if(!f) return; c
